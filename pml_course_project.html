@@ -122,31 +122,23 @@ training.v &lt;- training.v[, -(1:5)]</code></pre>
 <pre class="r"><code>tc &lt;- trainControl(method=&quot;cv&quot;, number=3, verboseIter=FALSE)
 
 #Basic Decision Tree
-rpart&lt;-train(classe~.,data=training.t,method=&quot;rpart&quot;,trControl=tc) </code></pre>
-<pre><code>## Loading required package: rpart</code></pre>
-<pre class="r"><code>#Linear Discriminate Analysis
-lda&lt;-train(classe~.,data=training.t,method=&quot;lda&quot;,trControl=tc) </code></pre>
-<pre><code>## Loading required package: MASS</code></pre>
-<pre class="r"><code>#Random Forests
+rpart&lt;-train(classe~.,data=training.t,method=&quot;rpart&quot;,trControl=tc) 
+
+#Linear Discriminate Analysis
+lda&lt;-train(classe~.,data=training.t,method=&quot;lda&quot;,trControl=tc) 
+
+#Random Forests
 rf&lt;-train(classe~.,data=training.t,method=&quot;rf&quot;,trControl=tc) </code></pre>
-<pre><code>## Loading required package: randomForest</code></pre>
-<pre><code>## Warning: package 'randomForest' was built under R version 3.2.3</code></pre>
-<pre><code>## randomForest 4.6-12
-## Type rfNews() to see new features/changes/bug fixes.</code></pre>
 </div>
 <div id="evaluation" class="section level2">
 <h2>Evaluation</h2>
 <p>Use each model to predict on the validation set and evaluate the accuracy of each.</p>
-<pre class="r"><code>predrpart &lt;- predict(rpart, newdata=training.v)</code></pre>
-<pre><code>## Loading required package: rpart</code></pre>
-<pre class="r"><code>predlda &lt;- predict(lda, newdata=training.v)</code></pre>
-<pre><code>## Loading required package: MASS</code></pre>
-<pre class="r"><code>predrf &lt;- predict(rf, newdata=training.v)</code></pre>
-<pre><code>## Loading required package: randomForest</code></pre>
-<pre><code>## Warning: package 'randomForest' was built under R version 3.2.3</code></pre>
-<pre><code>## randomForest 4.6-12
-## Type rfNews() to see new features/changes/bug fixes.</code></pre>
-<pre class="r"><code>confusionMatrix(training.v$classe, predrpart)</code></pre>
+<pre class="r"><code>predrpart &lt;- predict(rpart, newdata=training.v)
+predlda &lt;- predict(lda, newdata=training.v)
+predrf &lt;- predict(rf, newdata=training.v)
+
+
+confusionMatrix(training.v$classe, predrpart)</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
 ##           Reference
