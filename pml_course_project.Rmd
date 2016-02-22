@@ -1,0 +1,122 @@
+---
+title: "Practical Machine Learning Course Project"
+author: "Joe Guarascio"
+date: "February 22, 2016"
+output: html_document
+---
+
+##Introduction
+This project was done for the Practical Machine Learning course from Coursera.  The goal of the project is to create a model to predict the manner in which various exercises were done based on accelerometer data.
+
+The data come from 6 participants who wore accelerometers on the belt, forearm, arm, and dumbell and were asked to perform barbell lifts correctly and incorrectly in 5 different ways:  
+
+* exactly according to the specification (Class A)
+* throwing the elbows to the front (Class B)
+* lifting the dumbbell only halfway (Class C)
+* lowering the dumbbell only halfway (Class D)
+* throwing the hips to the front (Class E)
+
+More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+* Training Data:  https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+* Test Data: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+To begin, load the caret library and set the random number seed in order to make the outcomes exactly reproducible.
+
+```{r}
+library(caret)
+set.seed(12345)
+```
+
+##Data
+Load the training data and split it into a training set (75%) and validation set (25%).
+
+```{r}
+training <- read.csv("pml-training.csv")
+inTrain <- createDataPartition(y=training$classe, p=0.75, list=FALSE)
+training.t <- training[inTrain, ]
+training.v <- training[-inTrain, ]
+```
+
+##Features
+Not all features of the data can be used for prediction.  Features that have near zero variance or that contain a lot of NAs cannot be used.  In addition the first 5 columns of the data are used to identify the subject and recording times, and cannot be used as predictors.  This step will remove these features from the dataset. Features identified from the training set will also be removed from the validation set for consistency.
+
+```{r}
+# remove features with nearly zero variance
+nzv <- nearZeroVar(training.t)
+training.t <- training.t[, -nzv]
+training.v <- training.v[, -nzv]
+
+# remove any features that are NA 95% of the time
+mostlyNA <- sapply(training.t, function(x) mean(is.na(x))) > 0.95
+training.t <- training.t[, mostlyNA==F]
+training.v <- training.v[, mostlyNA==F]
+
+# remove the first 5 features dealing with the user and recording time
+training.t <- training.t[, -(1:5)]
+training.v <- training.v[, -(1:5)]
+```
+
+##Algorithm
+Try 3 different models using 3-fold cross validation.
+
+```{r, cache=TRUE}
+tc <- trainControl(method="cv", number=3, verboseIter=FALSE)
+
+#Basic Decision Tree
+rpart<-train(classe~.,data=training.t,method="rpart",trControl=tc) 
+
+#Linear Discriminate Analysis
+lda<-train(classe~.,data=training.t,method="lda",trControl=tc) 
+
+#Random Forests
+rf<-train(classe~.,data=training.t,method="rf",trControl=tc) 
+```             
+
+
+##Evaluation
+Use each model to predict on the validation set and evaluate the accuracy of each.
+
+```{r}
+predrpart <- predict(rpart, newdata=training.v)
+predlda <- predict(lda, newdata=training.v)
+predrf <- predict(rf, newdata=training.v)
+
+
+confusionMatrix(training.v$classe, predrpart)
+confusionMatrix(training.v$classe, predlda)
+confusionMatrix(training.v$classe, predrf)
+```
+
+Three models were evaluated:  decision trees, linear discriminate analysis, and random forests.  The model with the highest accuracy is random forests.  The accuracy is very close to 100% (.9963) meaning that the out of sample error is 0. 
+
+
+## Predicting on the Test Set
+First, preprocess and re-fit the random forests model using the full training set to improve accuracy even further.
+
+```{r, cache=TRUE}
+# remove features with nearly zero variance
+nzv <- nearZeroVar(training)
+training <- training[, -nzv]
+
+# remove any features that are NA 95% of the time
+mostlyNA <- sapply(training, function(x) mean(is.na(x))) > 0.95
+training <- training[, mostlyNA==F]
+
+# remove the first 5 features dealing with the user and recording time
+training <- training[, -(1:5)]
+
+# re-fit model using full training set
+tc <- trainControl(method="cv", number=3, verboseIter=FALSE)
+fit <- train(classe~., data=training, method="rf", trControl=tc)
+```
+
+
+Finally, load the testing data and use the model to predict the outcomes:
+```{r}
+# Load the testing data
+testing <- read.csv("pml-testing.csv")
+
+# Output the final predictions
+predict(fit, newdata=testing)
+```
